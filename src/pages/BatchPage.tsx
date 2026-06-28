@@ -57,7 +57,7 @@ export function BatchPage() {
 
       const response = await predictBatch({
         texts,
-        model: model === 'mbert' ? 'auto' : model,
+        model: model,
       });
 
       clearInterval(progressInterval);

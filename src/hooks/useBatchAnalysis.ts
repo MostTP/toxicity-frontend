@@ -19,7 +19,7 @@ export function useBatchAnalysis() {
     try {
       const response = await predictBatch({
         texts,
-        model: model === 'mbert' ? 'auto' : model,
+        model: model,
       });
 
       setResults(response.results.map((r, i) => ({

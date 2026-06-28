@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Sparkles, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { Analysis, ModelType } from '../types';
-import { useToxicity } from '../hooks/useToxicity';
 import { ResultCard } from '../components/ResultCard';
 import { AnalyzingOverlay } from '../components/AnalyzingOverlay';
 import { predict } from '../api/clients';
@@ -22,7 +21,6 @@ export function AnalyzePage() {
   const [source, setSource] = useState('');
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const { analyzeComment } = useToxicity();
 
   const charCount = comment.length;
 
@@ -37,7 +35,7 @@ export function AnalyzePage() {
     try {
       const result = await predict({
         text,
-        model: model === 'mbert' ? 'auto' : model,
+        model: model,
         source: source || 'web',
         return_probs: false,
       });
