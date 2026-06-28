@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import type { Page } from './types';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -6,20 +6,22 @@ import { AnalyzePage } from './pages/AnalyzePage';
 import { BatchPage } from './pages/BatchPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { FeedbackPage } from './pages/FeedbackPage';
+import { useState } from 'react';
 
-const pages: Record<Page, React.ReactNode> = {
-  analyze: <AnalyzePage />,
-  batch: <BatchPage />,
-  dashboard: <DashboardPage />,
-  feedback: <FeedbackPage />,
-};
+const validPages: Page[] = ['analyze', 'batch', 'dashboard', 'feedback'];
 
-export default function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('analyze');
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Derive current page from URL, default to 'analyze'
+  const currentPage: Page = validPages.includes(location.pathname.slice(1) as Page)
+    ? (location.pathname.slice(1) as Page)
+    : 'analyze';
+
   const handleNavigate = (page: Page) => {
-    setCurrentPage(page);
+    navigate(`/${page}`);
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
     }
@@ -39,9 +41,24 @@ export default function App() {
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
         <main className="flex-1 p-4">
-          {pages[currentPage]}
+          <Routes>
+            <Route path="/" element={<AnalyzePage />} />
+            <Route path="/analyze" element={<AnalyzePage />} />
+            <Route path="/batch" element={<BatchPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/feedback" element={<FeedbackPage />} />
+            <Route path="*" element={<AnalyzePage />} />
+          </Routes>
         </main>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }

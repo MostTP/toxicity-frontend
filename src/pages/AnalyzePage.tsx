@@ -1,10 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Sparkles, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { Analysis, ModelType } from '../types';
 import { ResultCard } from '../components/ResultCard';
 import { AnalyzingOverlay } from '../components/AnalyzingOverlay';
-import { predict } from '../api/clients';
-
+import { predict, getRecentPredictions } from '../api/clients';
 
 const SAMPLES = {
   safe1: "This tutorial really helped me understand the concept, thanks for sharing!",
@@ -21,11 +20,38 @@ export function AnalyzePage() {
   const [source, setSource] = useState('');
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState('');
+  const [loadingRecent, setLoadingRecent] = useState(true);
 
   const charCount = comment.length;
 
-  // Inside component:
-  const [error, setError] = useState('');
+  // Load recent analyses from backend on mount
+  useEffect(() => {
+    loadRecentAnalyses();
+  }, []);
+
+  const loadRecentAnalyses = useCallback(async () => {
+    setLoadingRecent(true);
+    try {
+      const data = await getRecentPredictions(20, 0);
+      // Map backend predictions to Analysis format
+      const mapped: Analysis[] = data.predictions.map(p => ({
+        id: Date.now() + Math.random(), // temporary ID for React key
+        text: `[${p.model_used.toUpperCase()}] Prediction #${p.id.slice(0, 8)}`, // Backend doesn't store text, show placeholder
+        model: p.model_used.toLowerCase() as ModelType,
+        source: p.source,
+        isToxic: p.label === 1,
+        score: Math.round(p.confidence * 100),
+        confidence: Math.round(p.confidence * 100),
+        timestamp: new Date(p.created_at),
+      }));
+      setAnalyses(mapped);
+    } catch (err) {
+      // Silent fail — local analyses still work
+    } finally {
+      setLoadingRecent(false);
+    }
+  }, []);
 
   const handleAnalyze = useCallback(async () => {
     const text = comment.trim();
@@ -112,7 +138,7 @@ export function AnalyzePage() {
                     <option value="cnn">CNN (Deep)</option>
                   </select>
                 </div>
-                <div className="flex flex-col gap-1.5">
+                {/* <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium" htmlFor="source">Source (optional)</label>
                   <input
                     id="source"
@@ -121,7 +147,7 @@ export function AnalyzePage() {
                     placeholder="reddit, discord, youtube…"
                     className="w-full h-9 rounded-md border border-input bg-transparent px-3 text-sm font-inherit focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring"
                   />
-                </div>
+                </div> */}
               </div>
 
               <button
@@ -167,15 +193,23 @@ export function AnalyzePage() {
           </div>
         </div>
 
-        {/* Results Panel */}
+        {/* Results Panel — Now loads from backend */}
         <div className="lg:sticky lg:top-20 self-start">
           <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-            <div className="px-6 pt-6 pb-3">
+            <div className="px-6 pt-6 pb-3 flex items-center justify-between">
               <div className="text-sm font-semibold tracking-tight">Recent analyses</div>
+              <button
+                onClick={loadRecentAnalyses}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                Refresh
+              </button>
             </div>
             <div className="px-6 pb-6">
               <div className="max-h-[600px] overflow-y-auto pr-1">
-                {analyses.length === 0 ? (
+                {loadingRecent && analyses.length === 0 ? (
+                  <p className="text-center py-8 text-sm text-muted-foreground">Loading...</p>
+                ) : analyses.length === 0 ? (
                   <p className="text-center py-8 text-sm text-muted-foreground">
                     No analyses yet — start above.
                   </p>

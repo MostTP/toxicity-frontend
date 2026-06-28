@@ -129,3 +129,29 @@ export async function getRecentPredictions(limit: number = 20, offset: number = 
   }
   return res.json();
 }
+
+export interface GeneralFeedbackRequest {
+  rating: number;
+  type: string;
+  text: string;
+  email?: string;
+}
+
+export interface GeneralFeedbackResponse {
+  status: string;
+  id: number;
+  received_at: string;
+}
+
+export async function submitGeneralFeedback(request: GeneralFeedbackRequest): Promise<GeneralFeedbackResponse> {
+  const res = await fetch(`${API_BASE}/admin/general-feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  return res.json();
+}
